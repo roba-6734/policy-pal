@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { FileUp, Link as LinkIcon, Shield, AlertCircle, CheckCircle } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import heroBg from "@/assets/hero-bg.jpg";
+import { summarizePolicyFromFile, summarizePolicyFromUrl } from "@/services/api";
 
 const Index = () => {
   const navigate = useNavigate();
@@ -44,32 +45,27 @@ const Index = () => {
     setIsLoading(true);
 
     try {
-      // TODO: Replace with actual API call
-      // const formData = new FormData();
-      // if (file) {
-      //   formData.append("file", file);
-      // } else {
-      //   formData.append("url", url);
-      // }
-      // const response = await fetch("/api/summarize_policy", {
-      //   method: "POST",
-      //   body: formData,
-      // });
-      // const data = await response.json();
+      let response;
+      
+      if (file) {
+        response = await summarizePolicyFromFile(file);
+      } else {
+        response = await summarizePolicyFromUrl(url);
+      }
 
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-
-      // Navigate to results page with mock data
+      // Navigate to results page with real API data
       navigate("/results", {
         state: {
-          source: file ? file.name : url,
+          summaryId: response.summary_id,
+          source: response.source_name,
+          sourceType: response.source_type,
         },
       });
     } catch (error) {
+      console.error("Error processing policy:", error);
       toast({
         title: "Error",
-        description: "Failed to process policy. Please try again.",
+        description: error instanceof Error ? error.message : "Failed to process policy. Please try again.",
         variant: "destructive",
       });
     } finally {

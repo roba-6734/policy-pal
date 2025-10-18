@@ -3,8 +3,10 @@ import { Button } from "@/components/ui/button";
 import { Shield, ArrowLeft } from "lucide-react";
 import PolicyCard from "@/components/PolicyCard";
 import { useEffect, useState } from "react";
+import { getPolicySummary, mapPolicySummary } from "@/services/api";
+import { toast } from "@/hooks/use-toast";
 
-// Mock data structure - replace with actual API response
+// Policy section structure for frontend display
 interface PolicySection {
   title: string;
   summary: string;
@@ -16,65 +18,37 @@ const Results = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const [sections, setSections] = useState<PolicySection[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const source = location.state?.source || "Unknown Document";
+  const summaryId = location.state?.summaryId;
 
   useEffect(() => {
-    // TODO: Replace with actual API call
-    // const fetchPolicySummary = async () => {
-    //   const response = await fetch("/api/summarize_policy", {
-    //     method: "POST",
-    //     body: formData,
-    //   });
-    //   const data = await response.json();
-    //   setSections(data.sections);
-    // };
+    const fetchPolicySummary = async () => {
+      if (!summaryId) {
+        // If no summaryId, redirect back to home
+        navigate("/");
+        return;
+      }
 
-    // Mock data for demonstration
-    const mockSections: PolicySection[] = [
-      {
-        title: "Data Collection",
-        summary:
-          "This policy collects personal information including name, email, device identifiers, and browsing behavior. Location data is collected when using the app.",
-        riskLevel: "caution",
-        details:
-          "The service collects: • Personal identifiers (name, email, phone) • Device information (IP address, browser type, device ID) • Usage data (pages visited, time spent, clicks) • Location data (GPS coordinates when app is active) • Cookies and tracking technologies for advertising purposes.",
-      },
-      {
-        title: "User Rights",
-        summary:
-          "Users have the right to access, correct, and delete their data. Requests must be submitted via email and will be processed within 30 days.",
-        riskLevel: "safe",
-        details:
-          "Your rights include: • Right to access your data • Right to correction of inaccurate data • Right to deletion (right to be forgotten) • Right to data portability • Right to object to processing • Right to withdraw consent at any time. Submit requests to privacy@example.com with subject line 'Data Rights Request'.",
-      },
-      {
-        title: "Data Sharing",
-        summary:
-          "Your data is shared with third-party analytics providers, advertising partners, and may be disclosed to law enforcement upon request without user notification.",
-        riskLevel: "danger",
-        details:
-          "Data is shared with: • Analytics providers (Google Analytics, Mixpanel) • Advertising networks for targeted ads • Payment processors for transactions • Service providers for infrastructure • Law enforcement when legally required • Business partners for co-marketing. No user notification is provided before law enforcement disclosure.",
-      },
-      {
-        title: "Opt-Out Options",
-        summary:
-          "Users can opt out of marketing emails but cannot opt out of service-related communications. Third-party tracking can be limited through browser settings.",
-        riskLevel: "caution",
-        details:
-          "Available opt-outs: • Marketing emails: Click unsubscribe link • Cookies: Use browser privacy settings • Personalized ads: Visit NAI or DAA opt-out pages • Analytics: Install browser extensions like Privacy Badger. Note: Service emails (account updates, security alerts) cannot be disabled.",
-      },
-      {
-        title: "Arbitration Clause",
-        summary:
-          "By using this service, you agree to binding arbitration and waive your right to a jury trial or participate in class action lawsuits.",
-        riskLevel: "danger",
-        details:
-          "Dispute resolution terms: • All disputes must be resolved through binding arbitration • No jury trials permitted • No class action lawsuits allowed • Individual arbitration only • Arbitration takes place in [Company State] • You have 30 days from first use to opt out by sending written notice • Arbitration costs split between parties.",
-      },
-    ];
+      try {
+        const response = await getPolicySummary(summaryId);
+        const mappedSections = mapPolicySummary(response.summary);
+        setSections(mappedSections);
+      } catch (error) {
+        console.error("Error fetching policy summary:", error);
+        toast({
+          title: "Error",
+          description: error instanceof Error ? error.message : "Failed to load policy summary.",
+          variant: "destructive",
+        });
+        navigate("/");
+      } finally {
+        setIsLoading(false);
+      }
+    };
 
-    setSections(mockSections);
-  }, []);
+    fetchPolicySummary();
+  }, [summaryId, navigate]);
 
   if (!location.state) {
     // Redirect if accessed directly without data
@@ -82,6 +56,17 @@ const Results = () => {
       navigate("/");
     }, [navigate]);
     return null;
+  }
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="h-8 w-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-muted-foreground">Loading policy summary...</p>
+        </div>
+      </div>
+    );
   }
 
   return (
