@@ -1,6 +1,6 @@
 """
 FastAPI main application for PolicyPal backend.
-Handles CORS, error handling, and route registration.
+Handles CORS, error handling, and route registration. This is the entry point for the API.
 """
 
 import logging
