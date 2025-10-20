@@ -15,8 +15,8 @@ class Settings(BaseSettings):
     database_url: str = "postgresql://user:password@localhost/policypal"
     
     # LLM Configuration
-    openai_api_key: str = ""
-    groq_api_key: str = ""
+    openai_api_key: str = os.getenv("OPENAI_API_KEY")
+    groq_api_key: str = os.getenv("GROQ_API_KEY")
     llm_provider: Literal["openai", "groq"] = "openai"
     llm_model: str = "gpt-4o-mini"  # Default to cost-effective model
     
@@ -26,7 +26,11 @@ class Settings(BaseSettings):
     api_version: str = "1.0.0"
     
     # CORS Settings
-    cors_origins: list[str] = ["http://localhost:3000", "http://localhost:5173"]
+    cors_origins: list[str] = [
+        "http://localhost:3000",
+        "http://localhost:5173",
+        "http://localhost:8080",
+    ]
     
     # File Upload Settings
     max_file_size: int = 25 * 1024 * 1024  # 25MB

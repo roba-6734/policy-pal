@@ -141,7 +141,7 @@ export const summarizePolicyFromUrl = async (url: string): Promise<SummarizePoli
  * Get a stored policy summary by ID
  */
 export const getPolicySummary = async (summaryId: string): Promise<GetSummaryResponse> => {
-  const response = await fetch(`${BASE_URL}/api/summaries/${summaryId}`);
+  const response = await fetch(`${BASE_URL}/api/summary/${summaryId}`);
 
   if (!response.ok) {
     const errorData: ErrorResponse = await response.json();

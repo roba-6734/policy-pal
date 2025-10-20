@@ -310,7 +310,7 @@ async def get_summary(summary_id: str, db: Session = Depends(get_db)):
         )
     
     return GetSummaryResponse(
-        summary_id=summary_record.id,
+        summary_id=str(summary_record.id),
         source_name=summary_record.source_name,
         source_type=summary_record.source_type,
         source_url=summary_record.source_url,
