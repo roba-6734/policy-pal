@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,12 +7,20 @@ import { FileUp, Link as LinkIcon, Shield, AlertCircle, CheckCircle } from "luci
 import { toast } from "@/hooks/use-toast";
 import heroBg from "@/assets/hero-bg.jpg";
 import { summarizePolicyFromFile, summarizePolicyFromUrl } from "@/services/api";
+import { useWorkspace } from "@/hooks/useWorkspace";
+import { cn } from "@/lib/utils";
 
 const Index = () => {
   const navigate = useNavigate();
+  const { open } = useWorkspace();
   const [file, setFile] = useState<File | null>(null);
   const [url, setUrl] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [dragActive, setDragActive] = useState(false);
+  const [queue, setQueue] = useState<Array<{ type: "file" | "url"; value: File | string; id: string }>>([]);
+  const [completedIds, setCompletedIds] = useState<string[]>([]);
+
+  const canAnalyze = useMemo(() => queue.length > 0 || !!file || !!url, [queue.length, file, url]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -32,8 +40,7 @@ const Index = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!file && !url) {
+    if (!file && !url && queue.length === 0) {
       toast({
         title: "Missing input",
         description: "Please provide a PDF file or URL.",
@@ -41,36 +48,65 @@ const Index = () => {
       });
       return;
     }
-
     setIsLoading(true);
-
+    const work: Array<{ type: "file" | "url"; value: File | string }> = [];
+    if (file) work.push({ type: "file", value: file });
+    if (url) work.push({ type: "url", value: url });
+    if (queue.length) work.push(...queue.map(({ type, value }) => ({ type, value })));
+    const producedIds: string[] = [];
     try {
-      let response;
-      
-      if (file) {
-        response = await summarizePolicyFromFile(file);
-      } else {
-        response = await summarizePolicyFromUrl(url);
+      for (const item of work) {
+        try {
+          const resp = item.type === "file"
+            ? await summarizePolicyFromFile(item.value as File)
+            : await summarizePolicyFromUrl(item.value as string);
+          producedIds.push(resp.summary_id);
+        } catch (err) {
+          console.error("Item failed:", err);
+          toast({
+            title: "Item failed",
+            description: err instanceof Error ? err.message : "Failed to process one item.",
+            variant: "destructive",
+          });
+        }
       }
-
-      // Navigate to results page with real API data
-      navigate("/results", {
-        state: {
-          summaryId: response.summary_id,
-          source: response.source_name,
-          sourceType: response.source_type,
-        },
-      });
-    } catch (error) {
-      console.error("Error processing policy:", error);
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to process policy. Please try again.",
-        variant: "destructive",
-      });
+      if (producedIds.length) {
+        setCompletedIds(producedIds);
+      }
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const onDrop = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setDragActive(false);
+    const files = Array.from(e.dataTransfer.files || []);
+    const pdfs = files.filter((f) => f.type === "application/pdf");
+    if (pdfs.length === 0) {
+      toast({ title: "No PDFs detected", description: "Please drop PDF files only.", variant: "destructive" });
+      return;
+    }
+    setQueue((prev) => [
+      ...prev,
+      ...pdfs.map((f) => ({ type: "file" as const, value: f, id: crypto.randomUUID() }))
+    ]);
+    setUrl("");
+    setFile(null);
+  }, []);
+
+  const onDragOver = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setDragActive(true);
+  }, []);
+
+  const onDragLeave = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setDragActive(false);
+  }, []);
+
+  const clearQueueItem = (id: string) => {
+    setQueue((prev) => prev.filter((q) => q.id !== id));
   };
 
   return (
@@ -113,7 +149,15 @@ const Index = () => {
                   <Label htmlFor="file-upload" className="text-base font-semibold">
                     Upload PDF Document
                   </Label>
-                  <div className="mt-2 relative">
+                  <div
+                    className={cn(
+                      "mt-2 relative rounded-lg border-2 border-dashed border-border p-6 transition-colors",
+                      dragActive ? "border-primary bg-primary/5" : ""
+                    )}
+                    onDrop={onDrop}
+                    onDragOver={onDragOver}
+                    onDragLeave={onDragLeave}
+                  >
                     <Input
                       id="file-upload"
                       type="file"
@@ -126,6 +170,22 @@ const Index = () => {
                         <CheckCircle className="h-4 w-4" />
                         {file.name}
                       </p>
+                    )}
+                    {queue.length > 0 && (
+                      <div className="mt-3 space-y-2">
+                        {queue.map((q) => (
+                          <div key={q.id} className="flex items-center justify-between text-sm text-foreground/90">
+                            <span>{q.type === "file" ? (q.value as File).name : (q.value as string)}</span>
+                            <button
+                              type="button"
+                              className="text-muted-foreground hover:text-foreground"
+                              onClick={() => clearQueueItem(q.id)}
+                            >
+                              Remove
+                            </button>
+                          </div>
+                        ))}
+                      </div>
                     )}
                   </div>
                 </div>
@@ -156,6 +216,24 @@ const Index = () => {
                         className="pl-10"
                       />
                     </div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => {
+                        if (!url) return;
+                        try {
+                          new URL(url);
+                        } catch {
+                          toast({ title: "Invalid URL", description: "Please enter a valid URL.", variant: "destructive" });
+                          return;
+                        }
+                        setQueue((prev) => [...prev, { type: "url", value: url, id: crypto.randomUUID() }]);
+                        setUrl("");
+                        setFile(null);
+                      }}
+                    >
+                      Queue URL
+                    </Button>
                   </div>
                 </div>
 
@@ -164,20 +242,47 @@ const Index = () => {
                   type="submit"
                   size="lg"
                   className="w-full text-lg h-14 font-semibold"
-                  disabled={isLoading || (!file && !url)}
+                  disabled={isLoading || !canAnalyze}
                 >
                   {isLoading ? (
                     <>
                       <div className="h-5 w-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
-                      Analyzing Policy...
+                      Analyzing...
                     </>
                   ) : (
                     <>
                       <FileUp className="mr-2 h-5 w-5" />
-                      Summarize Policy
+                      Analyze
                     </>
                   )}
                 </Button>
+
+                {completedIds.length > 0 && (
+                  <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between p-4 rounded-lg border border-border bg-muted/30">
+                    <p className="text-sm text-foreground">
+                      {completedIds.length} item(s) analyzed successfully.
+                    </p>
+                    <div className="flex gap-2">
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        onClick={() => {
+                          open(completedIds);
+                          navigate(`/results?ids=${encodeURIComponent(completedIds.join(","))}`);
+                        }}
+                      >
+                        Open in workspace
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => setCompletedIds([])}
+                      >
+                        Clear
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </form>
             </div>
           </div>
