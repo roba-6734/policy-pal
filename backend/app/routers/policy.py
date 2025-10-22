@@ -9,15 +9,16 @@ from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, status
 from sqlalchemy.orm import Session
 
-from app.database import get_db, save_summary, get_summary_by_id
+from app.database import User, get_db, save_summary, get_summary_by_id
 from app.models import (
-    SummarizePolicyResponse, 
-    ComparePoliciesResponse, 
+    SummarizePolicyResponse,
+    ComparePoliciesResponse,
     GetSummaryResponse,
     ErrorResponse
 )
 from app.services.summarizer import policy_summarizer
 from app.config import settings
+from app.routers import get_current_user
 
 
 router = APIRouter(prefix="/api", tags=["policy"])
@@ -33,7 +34,8 @@ router = APIRouter(prefix="/api", tags=["policy"])
 async def summarize_policy(
     file: Optional[UploadFile] = File(None, description="PDF file to analyze"),
     url: Optional[str] = Form(None, description="URL to the policy document"),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    _current_user: User = Depends(get_current_user)
 ):
     """
     Summarize a policy document from PDF upload or URL.
@@ -162,7 +164,8 @@ async def compare_policies(
     file2: Optional[UploadFile] = File(None, description="Second PDF file"),
     url1: Optional[str] = Form(None, description="First policy URL"),
     url2: Optional[str] = Form(None, description="Second policy URL"),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    _current_user: User = Depends(get_current_user)
 ):
     """
     Compare two policy documents.
@@ -287,7 +290,11 @@ async def compare_policies(
     summary="Retrieve a stored policy summary",
     description="Get a previously generated policy summary by its ID."
 )
-async def get_summary(summary_id: str, db: Session = Depends(get_db)):
+async def get_summary(
+    summary_id: str,
+    db: Session = Depends(get_db),
+    _current_user: User = Depends(get_current_user)
+):
     """
     Retrieve a stored policy summary by ID.
     """
@@ -324,7 +331,7 @@ async def get_summary(summary_id: str, db: Session = Depends(get_db)):
     summary="Health check",
     description="Check if the API is running and healthy."
 )
-async def health_check():
+async def health_check(_current_user: User = Depends(get_current_user)):
     """
     Health check endpoint for monitoring.
     """

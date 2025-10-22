@@ -1,15 +1,13 @@
-"""
-Database configuration and models for PolicyPal.
-Handles PostgreSQL connection and SQLAlchemy models.
-"""
+"""Database configuration and ORM models for PolicyPal."""
 
 import uuid
 from datetime import datetime
 from typing import Optional
-from sqlalchemy import create_engine, Column, String, DateTime, Text, JSON
+
+from sqlalchemy import Column, DateTime, JSON, String, Text, create_engine
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker, Session
+from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from app.config import settings
@@ -19,18 +17,32 @@ engine = create_engine(
     settings.database_url,
     poolclass=StaticPool,
     pool_pre_ping=True,
-    echo=False
+    echo=False,
 )
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
 
+class User(Base):
+    """SQLAlchemy model representing an authenticated user."""
+
+    __tablename__ = "users"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    email = Column(String(255), unique=True, nullable=False, index=True)
+    hashed_password = Column(String(255), nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(
+        DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False
+    )
+
+
 class PolicySummary(Base):
     """SQLAlchemy model for storing policy summaries."""
-    
+
     __tablename__ = "policy_summaries"
-    
+
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     source_type = Column(String(10), nullable=False)  # 'pdf' or 'url'
     source_name = Column(Text, nullable=False)
@@ -53,6 +65,36 @@ def get_db() -> Session:
 def create_tables():
     """Create all database tables."""
     Base.metadata.create_all(bind=engine)
+
+
+def get_user_by_id(db: Session, user_id: str) -> Optional[User]:
+    """Retrieve a user by their ID."""
+    try:
+        user_uuid = uuid.UUID(str(user_id))
+    except (TypeError, ValueError):
+        return None
+
+    try:
+        return db.query(User).filter(User.id == user_uuid).first()
+    except Exception:
+        return None
+
+
+def get_user_by_email(db: Session, email: str) -> Optional[User]:
+    """Retrieve a user by email."""
+    try:
+        return db.query(User).filter(User.email == email).first()
+    except Exception:
+        return None
+
+
+def create_user(db: Session, email: str, hashed_password: str) -> User:
+    """Persist a new user to the database."""
+    user = User(email=email, hashed_password=hashed_password)
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+    return user
 
 
 def get_summary_by_id(db: Session, summary_id: str) -> Optional[PolicySummary]:
