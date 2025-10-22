@@ -81,6 +81,28 @@ class GetSummaryResponse(BaseModel):
     created_at: str
 
 
+class SummaryHistoryItem(BaseModel):
+    """Response model for a summary history entry."""
+
+    summary_id: str = Field(..., description="Unique identifier for the summary")
+    source_name: str = Field(..., description="Name of the source document")
+    source_type: str = Field(..., description="Type of the source: pdf or url")
+    source_url: Optional[str] = Field(None, description="URL of the source document if applicable")
+    created_at: str = Field(..., description="When the summary was created")
+    updated_at: str = Field(..., description="When the summary was last updated")
+    file_hash: Optional[str] = Field(None, description="Hash of the source for deduplication")
+    summary_preview: Optional[str] = Field(None, description="Short preview of the generated summary")
+
+
+class SummaryHistoryResponse(BaseModel):
+    """Paginated response model for summary history."""
+
+    items: list[SummaryHistoryItem] = Field(..., description="List of history entries")
+    total: int = Field(..., description="Total number of history items available")
+    limit: int = Field(..., description="Maximum number of items returned")
+    offset: int = Field(..., description="Number of skipped items from the start")
+
+
 class ErrorResponse(BaseModel):
     """Error response model."""
     error: str = Field(..., description="Error message")

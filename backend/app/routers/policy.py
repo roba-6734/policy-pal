@@ -6,18 +6,25 @@ Handles file uploads, URL processing, and database operations.
 import uuid
 from datetime import datetime
 from typing import Optional
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, status
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, Query, status
 from sqlalchemy.orm import Session
 
-from app.database import get_db, save_summary, get_summary_by_id
+from app.database import (
+    get_db,
+    save_summary,
+    get_summary_by_id,
+    list_summaries_for_user,
+)
 from app.models import (
-    SummarizePolicyResponse, 
-    ComparePoliciesResponse, 
+    SummarizePolicyResponse,
+    ComparePoliciesResponse,
     GetSummaryResponse,
+    SummaryHistoryResponse,
     ErrorResponse
 )
 from app.services.summarizer import policy_summarizer
 from app.config import settings
+from app.utils.auth import AuthenticatedUser, get_current_user
 
 
 router = APIRouter(prefix="/api", tags=["policy"])
@@ -33,7 +40,8 @@ router = APIRouter(prefix="/api", tags=["policy"])
 async def summarize_policy(
     file: Optional[UploadFile] = File(None, description="PDF file to analyze"),
     url: Optional[str] = Form(None, description="URL to the policy document"),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    _current_user: AuthenticatedUser = Depends(get_current_user)
 ):
     """
     Summarize a policy document from PDF upload or URL.
@@ -87,6 +95,7 @@ async def summarize_policy(
             # Save to database
             summary_record = save_summary(
                 db=db,
+                user_id=current_user.id,
                 source_type="pdf",
                 source_name=file.filename or "unknown.pdf",
                 source_url=None,
@@ -116,6 +125,7 @@ async def summarize_policy(
             # Save to database
             summary_record = save_summary(
                 db=db,
+                user_id=current_user.id,
                 source_type="url",
                 source_name=page_title,
                 source_url=url,
@@ -162,7 +172,8 @@ async def compare_policies(
     file2: Optional[UploadFile] = File(None, description="Second PDF file"),
     url1: Optional[str] = Form(None, description="First policy URL"),
     url2: Optional[str] = Form(None, description="Second policy URL"),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: AuthenticatedUser = Depends(get_current_user)
 ):
     """
     Compare two policy documents.
@@ -287,7 +298,11 @@ async def compare_policies(
     summary="Retrieve a stored policy summary",
     description="Get a previously generated policy summary by its ID."
 )
-async def get_summary(summary_id: str, db: Session = Depends(get_db)):
+async def get_summary(
+    summary_id: str,
+    db: Session = Depends(get_db),
+    current_user: AuthenticatedUser = Depends(get_current_user)
+):
     """
     Retrieve a stored policy summary by ID.
     """
@@ -301,7 +316,7 @@ async def get_summary(summary_id: str, db: Session = Depends(get_db)):
         )
     
     # Get summary from database
-    summary_record = get_summary_by_id(db, summary_id)
+    summary_record = get_summary_by_id(db, summary_id, user_id=current_user.id)
     
     if not summary_record:
         raise HTTPException(
@@ -316,6 +331,99 @@ async def get_summary(summary_id: str, db: Session = Depends(get_db)):
         source_url=summary_record.source_url,
         summary=summary_record.summary_data,
         created_at=summary_record.created_at.isoformat()
+    )
+
+
+@router.get(
+    "/history",
+    response_model=SummaryHistoryResponse,
+    summary="Retrieve policy summary history",
+    description="List previously generated summaries for the authenticated user."
+)
+async def get_summary_history(
+    limit: int = Query(20, ge=1, le=100, description="Maximum number of records to return"),
+    offset: int = Query(0, ge=0, description="Number of records to skip"),
+    source_type: Optional[str] = Query(
+        None,
+        description="Filter by source type (pdf or url)",
+        pattern="^(pdf|url)$"
+    ),
+    start_date: Optional[str] = Query(
+        None,
+        description="Filter summaries created on or after this ISO 8601 datetime"
+    ),
+    end_date: Optional[str] = Query(
+        None,
+        description="Filter summaries created on or before this ISO 8601 datetime"
+    ),
+    db: Session = Depends(get_db),
+    current_user: AuthenticatedUser = Depends(get_current_user)
+):
+    """Return paginated summary history for the current user."""
+
+    def parse_datetime(value: Optional[str], field_name: str) -> Optional[datetime]:
+        if value is None:
+            return None
+
+        try:
+            return datetime.fromisoformat(value)
+        except ValueError as exc:  # pragma: no cover - defensive branch
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"{field_name} must be a valid ISO 8601 datetime"
+            ) from exc
+
+    start_dt = parse_datetime(start_date, "start_date")
+    end_dt = parse_datetime(end_date, "end_date")
+
+    if start_dt and end_dt and start_dt > end_dt:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="start_date must be earlier than or equal to end_date"
+        )
+
+    summaries, total = list_summaries_for_user(
+        db,
+        current_user.id,
+        limit=limit,
+        offset=offset,
+        source_type=source_type,
+        start_date=start_dt,
+        end_date=end_dt
+    )
+
+    def build_summary_preview(summary_payload: Optional[dict]) -> Optional[str]:
+        if not summary_payload:
+            return None
+
+        for key in ("Data Collection", "User Rights", "Data Sharing"):
+            section = summary_payload.get(key)
+            if isinstance(section, dict):
+                preview = section.get("summary")
+                if isinstance(preview, str) and preview.strip():
+                    return preview[:240]
+
+        return None
+
+    items = [
+        {
+            "summary_id": str(summary.id),
+            "source_name": summary.source_name,
+            "source_type": summary.source_type,
+            "source_url": summary.source_url,
+            "created_at": summary.created_at.isoformat(),
+            "updated_at": summary.updated_at.isoformat() if summary.updated_at else summary.created_at.isoformat(),
+            "file_hash": summary.file_hash,
+            "summary_preview": build_summary_preview(summary.summary_data),
+        }
+        for summary in summaries
+    ]
+
+    return SummaryHistoryResponse(
+        items=items,
+        total=total,
+        limit=limit,
+        offset=offset
     )
 
 
