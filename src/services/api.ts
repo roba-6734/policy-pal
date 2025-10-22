@@ -4,6 +4,27 @@
 
 const BASE_URL = "http://localhost:8000";
 
+let authToken: string | null = null;
+
+export const setAuthToken = (token: string | null) => {
+  authToken = token;
+};
+
+type FetchOptions = RequestInit & { skipAuth?: boolean };
+
+const fetchWithAuth = (url: string, options: FetchOptions = {}) => {
+  const { skipAuth, headers, ...rest } = options;
+  const mergedHeaders = new Headers(headers ?? {});
+  if (!skipAuth && authToken && !mergedHeaders.has("Authorization")) {
+    mergedHeaders.set("Authorization", `Bearer ${authToken}`);
+  }
+
+  return fetch(url, {
+    ...rest,
+    headers: mergedHeaders,
+  });
+};
+
 // Types matching the backend models
 export type RiskLevel = "green" | "yellow" | "red";
 
@@ -104,7 +125,7 @@ export const summarizePolicyFromFile = async (file: File): Promise<SummarizePoli
   const formData = new FormData();
   formData.append("file", file);
 
-  const response = await fetch(`${BASE_URL}/api/summarize_policy`, {
+  const response = await fetchWithAuth(`${BASE_URL}/api/summarize_policy`, {
     method: "POST",
     body: formData,
   });
@@ -124,7 +145,7 @@ export const summarizePolicyFromUrl = async (url: string): Promise<SummarizePoli
   const formData = new FormData();
   formData.append("url", url);
 
-  const response = await fetch(`${BASE_URL}/api/summarize_policy`, {
+  const response = await fetchWithAuth(`${BASE_URL}/api/summarize_policy`, {
     method: "POST",
     body: formData,
   });
@@ -141,7 +162,7 @@ export const summarizePolicyFromUrl = async (url: string): Promise<SummarizePoli
  * Get a stored policy summary by ID
  */
 export const getPolicySummary = async (summaryId: string): Promise<GetSummaryResponse> => {
-  const response = await fetch(`${BASE_URL}/api/summary/${summaryId}`);
+  const response = await fetchWithAuth(`${BASE_URL}/api/summary/${summaryId}`);
 
   if (!response.ok) {
     const errorData: ErrorResponse = await response.json();
@@ -155,10 +176,79 @@ export const getPolicySummary = async (summaryId: string): Promise<GetSummaryRes
  * Health check
  */
 export const healthCheck = async (): Promise<{ status: string; timestamp: string; version: string }> => {
-  const response = await fetch(`${BASE_URL}/api/health`);
+  const response = await fetchWithAuth(`${BASE_URL}/api/health`);
 
   if (!response.ok) {
     throw new Error(`HTTP error! status: ${response.status}`);
+  }
+
+  return response.json();
+};
+
+export interface AuthResponse {
+  access_token: string;
+  token_type: string;
+}
+
+export interface LoginPayload {
+  email: string;
+  password: string;
+}
+
+export interface RegisterPayload {
+  email: string;
+  password: string;
+}
+
+export interface RegisterResponse {
+  id: string;
+  email: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export const login = async (payload: LoginPayload): Promise<AuthResponse> => {
+  const response = await fetchWithAuth(`${BASE_URL}/api/auth/login`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+    skipAuth: true,
+  });
+
+  if (!response.ok) {
+    const errorData: ErrorResponse = await response.json().catch(() => ({ error: "Login failed" }));
+    throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+  }
+
+  return response.json();
+};
+
+export const register = async (payload: RegisterPayload): Promise<RegisterResponse> => {
+  const response = await fetchWithAuth(`${BASE_URL}/api/auth/register`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+    skipAuth: true,
+  });
+
+  if (!response.ok) {
+    const errorData: ErrorResponse = await response.json().catch(() => ({ error: "Registration failed" }));
+    throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+  }
+
+  return response.json();
+};
+
+export const getHistory = async (): Promise<GetSummaryResponse[]> => {
+  const response = await fetchWithAuth(`${BASE_URL}/api/summaries`);
+
+  if (!response.ok) {
+    const errorData: ErrorResponse = await response.json().catch(() => ({ error: "Failed to load history" }));
+    throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
   }
 
   return response.json();

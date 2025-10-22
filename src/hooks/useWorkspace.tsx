@@ -1,5 +1,6 @@
-import { createContext, useContext, useEffect, useMemo, useRef, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { GetSummaryResponse, getPolicySummary } from "@/services/api";
+import { useAuth } from "@/hooks/useAuth";
 
 type WorkspaceContextValue = {
   summariesById: Record<string, GetSummaryResponse>;
@@ -49,54 +50,75 @@ export const WorkspaceProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
   const inflight = useRef<Set<string>>(new Set());
 
-  const ensureLoaded = async (ids: string[]) => {
-    const toFetch = ids.filter((id) => !summariesById[id] && !inflight.current.has(id));
-    if (toFetch.length === 0) return;
-    toFetch.forEach((id) => inflight.current.add(id));
-    try {
-      const results = await Promise.all(
-        toFetch.map(async (id) => {
-          const summary = await getPolicySummary(id);
-          return summary;
-        })
-      );
-      setSummariesById((prev) => {
-        const next = { ...prev };
-        for (const s of results) next[s.summary_id] = s;
-        return next;
-      });
-    } finally {
-      toFetch.forEach((id) => inflight.current.delete(id));
-    }
-  };
+  const ensureLoaded = useCallback(
+    async (ids: string[]) => {
+      const toFetch = ids.filter((id) => !summariesById[id] && !inflight.current.has(id));
+      if (toFetch.length === 0) return;
+      toFetch.forEach((id) => inflight.current.add(id));
+      try {
+        const results = await Promise.all(
+          toFetch.map(async (id) => {
+            const summary = await getPolicySummary(id);
+            return summary;
+          })
+        );
+        setSummariesById((prev) => {
+          const next = { ...prev };
+          for (const s of results) next[s.summary_id] = s;
+          return next;
+        });
+      } finally {
+        toFetch.forEach((id) => inflight.current.delete(id));
+      }
+    },
+    [summariesById]
+  );
 
-  const open = (ids: string[]) => {
+  const open = useCallback((ids: string[]) => {
     setOpenIds((prev) => {
       const set = new Set(prev);
       for (const id of ids) set.add(id);
       const next = Array.from(set);
-      if (!activeId && next.length) setActiveId(next[0]);
+      setActiveId((current) => current ?? next[0] ?? null);
       return next;
     });
-  };
+  }, []);
 
-  const setActive = (id: string) => {
+  const setActive = useCallback((id: string) => {
     setActiveId(id);
-  };
+  }, []);
 
-  const close = (id: string) => {
+  const close = useCallback((id: string) => {
     setOpenIds((prev) => {
       const idx = prev.indexOf(id);
       if (idx === -1) return prev;
       const next = [...prev.slice(0, idx), ...prev.slice(idx + 1)];
-      if (activeId === id) setActiveId(next[0] ?? null);
+      setActiveId((current) => (current === id ? next[0] ?? null : current));
       return next;
     });
-  };
+  }, []);
+
+  const { token } = useAuth();
+  const hasInitialised = useRef(false);
+
+  useEffect(() => {
+    if (!hasInitialised.current) {
+      hasInitialised.current = true;
+      return;
+    }
+
+    setSummariesById({});
+    setOpenIds([]);
+    setActiveId(null);
+    try {
+      localStorage.removeItem(OPEN_IDS_KEY);
+      localStorage.removeItem(ACTIVE_ID_KEY);
+    } catch {}
+  }, [token]);
 
   const value = useMemo(
     () => ({ summariesById, openIds, activeId, open, setActive, close, ensureLoaded }),
-    [summariesById, openIds, activeId]
+    [summariesById, openIds, activeId, open, setActive, close, ensureLoaded]
   );
 
   return <WorkspaceContext.Provider value={value}>{children}</WorkspaceContext.Provider>;
