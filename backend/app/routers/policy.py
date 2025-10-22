@@ -41,7 +41,7 @@ async def summarize_policy(
     file: Optional[UploadFile] = File(None, description="PDF file to analyze"),
     url: Optional[str] = Form(None, description="URL to the policy document"),
     db: Session = Depends(get_db),
-    _current_user: AuthenticatedUser = Depends(get_current_user)
+    current_user: AuthenticatedUser = Depends(get_current_user)
 ):
     """
     Summarize a policy document from PDF upload or URL.
