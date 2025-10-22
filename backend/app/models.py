@@ -4,7 +4,7 @@ Defines the structure of data exchanged between frontend and backend.
 """
 
 from typing import Optional, Literal, Dict, Any
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, EmailStr, Field
 
 
 # Risk levels for policy sections
@@ -38,6 +38,48 @@ class PolicyComparison(BaseModel):
         ..., 
         description="Comparison data for each section"
     )
+
+
+# Authentication models
+class UserBase(BaseModel):
+    """Shared attributes for user representations."""
+
+    email: EmailStr = Field(..., description="User email address")
+
+
+class UserRegistrationRequest(UserBase):
+    """Request payload for creating a new user."""
+
+    password: str = Field(..., min_length=8, description="Plaintext password")
+
+
+class UserRegistrationResponse(UserBase):
+    """Response returned after a successful registration."""
+
+    id: str = Field(..., description="User identifier")
+    created_at: str = Field(..., description="Creation timestamp")
+    updated_at: str = Field(..., description="Last update timestamp")
+
+
+class UserLoginRequest(BaseModel):
+    """Request payload for logging in an existing user."""
+
+    email: EmailStr = Field(..., description="User email address")
+    password: str = Field(..., min_length=8, description="Plaintext password")
+
+
+class TokenResponse(BaseModel):
+    """Response containing a JWT access token."""
+
+    access_token: str = Field(..., description="JWT access token")
+    token_type: str = Field("bearer", description="Token type")
+
+
+class TokenPayload(BaseModel):
+    """Decoded token payload."""
+
+    sub: str | None = Field(None, description="Token subject")
+    exp: int | None = Field(None, description="Token expiration timestamp")
 
 
 # Request models

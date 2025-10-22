@@ -41,7 +41,7 @@ async def summarize_policy(
     file: Optional[UploadFile] = File(None, description="PDF file to analyze"),
     url: Optional[str] = Form(None, description="URL to the policy document"),
     db: Session = Depends(get_db),
-    current_user: AuthenticatedUser = Depends(get_current_user)
+    _current_user: User = Depends(get_current_user)
 ):
     """
     Summarize a policy document from PDF upload or URL.
@@ -173,7 +173,7 @@ async def compare_policies(
     url1: Optional[str] = Form(None, description="First policy URL"),
     url2: Optional[str] = Form(None, description="Second policy URL"),
     db: Session = Depends(get_db),
-    current_user: AuthenticatedUser = Depends(get_current_user)
+    _current_user: User = Depends(get_current_user)
 ):
     """
     Compare two policy documents.
@@ -301,7 +301,7 @@ async def compare_policies(
 async def get_summary(
     summary_id: str,
     db: Session = Depends(get_db),
-    current_user: AuthenticatedUser = Depends(get_current_user)
+    _current_user: User = Depends(get_current_user)
 ):
     """
     Retrieve a stored policy summary by ID.
@@ -432,7 +432,7 @@ async def get_summary_history(
     summary="Health check",
     description="Check if the API is running and healthy."
 )
-async def health_check():
+async def health_check(_current_user: User = Depends(get_current_user)):
     """
     Health check endpoint for monitoring.
     """
