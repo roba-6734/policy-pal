@@ -332,9 +332,9 @@ Each response includes structured JSON keyed by the five policy sections with su
 
 ## UI Gallery
 
-| Landing Page | Comparison Setup | Comparison Results |
-| ------------ | ---------------- | ------------------ |
-| ![Landing page showing upload form and URL input](public/screenshots/hero.png) | ![Comparison setup with tabs for PDFs and URLs](public/screenshots/compare.png) | ![Comparison results highlighting differences and recommendations](public/screenshots/comparison-results.png) |
+| Landing Page | Policy Summarizer | Comparison Setup | Comparison Results |
+| ------------ | ----------------- | ---------------- | ------------------ |
+| ![Landing page welcoming users to PolicyPal](public/screenshots/landing.png) | ![Summarizer form for uploading a PDF or entering a URL](public/screenshots/summarize.png) | ![Comparison setup with tabs for PDFs and URLs](public/screenshots/compare.png) | ![Comparison results highlighting differences and recommendations](public/screenshots/comparison_result.png) |
 
 ---
 

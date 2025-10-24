@@ -15,9 +15,7 @@ const Landing = () => {
             <Shield className="h-8 w-8 text-primary" />
             <h1 className="text-2xl font-bold text-foreground">PolicyPal</h1>
           </div>
-          <Button variant="outline" onClick={() => navigate("/compare")}>
-            Compare Policies
-          </Button>
+          
         </div>
       </header>
 
