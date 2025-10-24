@@ -1,6 +1,6 @@
 import { useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Shield, ArrowLeft } from "lucide-react";
+import { Shield, ArrowLeft, ArrowLeftRight } from "lucide-react";
 import PolicyCard from "@/components/PolicyCard";
 import { useEffect, useState } from "react";
 import { getPolicySummary, mapPolicySummary } from "@/services/api";
@@ -79,10 +79,16 @@ const Results = () => {
               <Shield className="h-8 w-8 text-primary" />
               <h1 className="text-2xl font-bold text-foreground">PolicyPal</h1>
             </div>
-            <Button variant="outline" onClick={() => navigate("/")}>
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              New Analysis
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" onClick={() => navigate("/compare")}>
+                <ArrowLeftRight className="mr-2 h-4 w-4" />
+                Compare Policies
+              </Button>
+              <Button variant="outline" onClick={() => navigate("/")}>
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                New Analysis
+              </Button>
+            </div>
           </div>
         </div>
       </header>

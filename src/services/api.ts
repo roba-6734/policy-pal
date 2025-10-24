@@ -43,6 +43,35 @@ export interface ErrorResponse {
   detail?: string;
 }
 
+export interface PolicyComparisonSection {
+  policy1_summary: string;
+  policy2_summary: string;
+  key_differences: string;
+  recommendation: string;
+}
+
+export type PolicyComparisonSections = {
+  "Data Collection": PolicyComparisonSection;
+  "User Rights": PolicyComparisonSection;
+  "Data Sharing": PolicyComparisonSection;
+  "Opt-Out Options": PolicyComparisonSection;
+  "Arbitration Clause": PolicyComparisonSection;
+};
+
+export interface PolicyComparison {
+  policy1_name: string;
+  policy2_name: string;
+  sections: PolicyComparisonSections;
+}
+
+export interface ComparePoliciesResponse {
+  comparison_id: string;
+  policy1_name: string;
+  policy2_name: string;
+  comparison: PolicyComparison;
+  created_at: string;
+}
+
 /**
  * Convert backend risk levels to frontend risk levels
  */
@@ -93,6 +122,34 @@ export const mapPolicySummary = (summary: PolicySummary) => {
       summary: summary["Arbitration Clause"].summary,
       riskLevel: mapRiskLevel(summary["Arbitration Clause"].risk),
       details: summary["Arbitration Clause"].details,
+    },
+  ];
+};
+
+/**
+ * Convert backend policy comparison to frontend format
+ */
+export const mapPolicyComparison = (comparison: PolicyComparison) => {
+  return [
+    {
+      title: "Data Collection",
+      ...comparison.sections["Data Collection"],
+    },
+    {
+      title: "User Rights",
+      ...comparison.sections["User Rights"],
+    },
+    {
+      title: "Data Sharing",
+      ...comparison.sections["Data Sharing"],
+    },
+    {
+      title: "Opt-Out Options",
+      ...comparison.sections["Opt-Out Options"],
+    },
+    {
+      title: "Arbitration Clause",
+      ...comparison.sections["Arbitration Clause"],
     },
   ];
 };
@@ -159,6 +216,48 @@ export const healthCheck = async (): Promise<{ status: string; timestamp: string
 
   if (!response.ok) {
     throw new Error(`HTTP error! status: ${response.status}`);
+  }
+
+  return response.json();
+};
+
+/**
+ * Compare two policies from PDF files
+ */
+export const comparePoliciesFromFiles = async (file1: File, file2: File): Promise<ComparePoliciesResponse> => {
+  const formData = new FormData();
+  formData.append("file1", file1);
+  formData.append("file2", file2);
+
+  const response = await fetch(`${BASE_URL}/api/compare_policies`, {
+    method: "POST",
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const errorData: ErrorResponse = await response.json();
+    throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+  }
+
+  return response.json();
+};
+
+/**
+ * Compare two policies from URLs
+ */
+export const comparePoliciesFromUrls = async (url1: string, url2: string): Promise<ComparePoliciesResponse> => {
+  const formData = new FormData();
+  formData.append("url1", url1);
+  formData.append("url2", url2);
+
+  const response = await fetch(`${BASE_URL}/api/compare_policies`, {
+    method: "POST",
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const errorData: ErrorResponse = await response.json();
+    throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
   }
 
   return response.json();

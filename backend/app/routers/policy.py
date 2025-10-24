@@ -14,7 +14,8 @@ from app.models import (
     SummarizePolicyResponse, 
     ComparePoliciesResponse, 
     GetSummaryResponse,
-    ErrorResponse
+    ErrorResponse,
+    PolicyComparison
 )
 from app.services.summarizer import policy_summarizer
 from app.config import settings
@@ -228,7 +229,11 @@ async def compare_policies(
                 comparison_id=comparison_id,
                 policy1_name=file1.filename or "policy1.pdf",
                 policy2_name=file2.filename or "policy2.pdf",
-                comparison=comparison_data,
+                comparison=PolicyComparison(
+                    policy1_name=file1.filename or "policy1.pdf",
+                    policy2_name=file2.filename or "policy2.pdf",
+                    sections=comparison_data
+                ),
                 created_at=datetime.utcnow().isoformat()
             )
         
@@ -258,7 +263,11 @@ async def compare_policies(
                 comparison_id=comparison_id,
                 policy1_name=title1,
                 policy2_name=title2,
-                comparison=comparison_data,
+                comparison=PolicyComparison(
+                    policy1_name=title1,
+                    policy2_name=title2,
+                    sections=comparison_data
+                ),
                 created_at=datetime.utcnow().isoformat()
             )
     
