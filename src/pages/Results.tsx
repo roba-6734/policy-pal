@@ -1,6 +1,6 @@
 import { useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Shield, ArrowLeft, ArrowLeftRight } from "lucide-react";
+import { Shield, ArrowLeftRight, FileUp, Home as HomeIcon } from "lucide-react";
 import PolicyCard from "@/components/PolicyCard";
 import { useEffect, useState } from "react";
 import { getPolicySummary, mapPolicySummary } from "@/services/api";
@@ -86,13 +86,17 @@ const Results = () => {
               <h1 className="text-2xl font-bold text-foreground">PolicyPal</h1>
             </div>
             <div className="flex items-center gap-2">
+              <Button variant="outline" onClick={() => navigate("/summarize")}>
+                <FileUp className="mr-2 h-4 w-4" />
+                Summarize Another
+              </Button>
               <Button variant="outline" onClick={() => navigate("/compare")}>
                 <ArrowLeftRight className="mr-2 h-4 w-4" />
                 Compare Policies
               </Button>
               <Button variant="outline" onClick={() => navigate("/")}>
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                New Analysis
+                <HomeIcon className="mr-2 h-4 w-4" />
+                Home
               </Button>
             </div>
           </div>

@@ -152,8 +152,11 @@ const Compare = () => {
               <h1 className="text-2xl font-bold">PolicyPal</h1>
             </button>
             <div className="flex items-center gap-2">
+              <Button variant="outline" onClick={() => navigate("/summarize")}>
+                Summarize Policy
+              </Button>
               <Button variant="outline" onClick={() => navigate("/")}>
-                New Analysis
+                Home
               </Button>
             </div>
           </div>
