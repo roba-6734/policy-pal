@@ -59,24 +59,18 @@ The backend can run independently and exposes a REST API. The frontend communica
 ```
 policy-pal/
 ├─ backend/                 # FastAPI service
-│  ├─ app/                  # Application packages
-│  │  ├─ routers/           # API routes (policy)
-│  │  ├─ services/          # PDF extractor, summarizer, LLM, URL scraper
-│  │  ├─ models.py          # Pydantic response & request models
-│  │  ├─ database.py        # SQLAlchemy models and helpers
-│  │  └─ config.py          # Settings loaded from .env
+│  ├─ app/                  # Application packages (routers, services, models, config)
 │  ├─ requirements.txt      # Python dependencies
 │  ├─ Dockerfile            # Containerized backend build
 │  └─ README.md             # Backend-specific docs
-├─ src/                     # React frontend
-│  ├─ pages/                # Index, Results, Compare, NotFound
-│  ├─ components/           # Shared UI components (PolicyCard, shadcn/ui)
-│  ├─ hooks/                # Workspace state management
-│  ├─ services/             # REST API client helpers
-│  └─ App.tsx               # Router & providers
-├─ package.json             # Frontend scripts & dependencies
-├─ README.md                # You are here
-└─ …                        # Configuration files (Vite, Tailwind, ESLint)
+├─ frontend/                # Vite + React application
+│  ├─ src/                  # Pages, components, hooks, services
+│  ├─ public/               # Static assets served by Vite
+│  ├─ package.json          # Frontend scripts & dependencies
+│  └─ ...                   # Vite/Tailwind/ESLint configs, node_modules, etc.
+├─ .env                     # Shared environment variables for the stack
+├─ .gitignore               # Global git ignore rules
+└─ README.md                # You are here
 ```
 
 ---
@@ -110,10 +104,8 @@ policy-pal/
    ```
 
 3. **Configure environment variables**
-   ```bash
-   cp .env.example .env    # file contains sensible defaults
-   ```
-   Update `.env` with at least:
+
+   Create a `.env` file in the repository root (one level above `backend/`) with at least:
    - `DATABASE_URL=postgresql://USER:PASSWORD@HOST:PORT/policypal`
    - `LLM_PROVIDER=openai` (or `groq`)
    - `OPENAI_API_KEY` or `GROQ_API_KEY`
@@ -133,10 +125,11 @@ policy-pal/
 
 1. **Install dependencies**
    ```bash
+   cd frontend
    npm install
    ```
 
-2. **Run the development server**
+2. **Run the development server** (from within `frontend/`)
    ```bash
    npm run dev
    ```
@@ -153,10 +146,10 @@ policy-pal/
 ## Running the Full Stack
 
 1. Start the backend (`uvicorn app.main:app --reload`).
-2. Start the frontend (`npm run dev`).
+2. Start the frontend (`cd frontend && npm run dev`).
 3. Open `http://localhost:5173` in your browser.
 
-The frontend makes requests to `http://localhost:8000/api/...`. If you deploy the backend elsewhere, update `src/services/api.ts` or configure Vite proxy and environment variables accordingly.
+The frontend makes requests to `http://localhost:8000/api/...`. If you deploy the backend elsewhere, update `frontend/src/services/api.ts` or configure Vite proxy and environment variables accordingly.
 
 ---
 
@@ -178,7 +171,7 @@ The frontend makes requests to `http://localhost:8000/api/...`. If you deploy th
 
 ### Frontend Configuration
 
-All API calls currently use the hardcoded base URL `http://localhost:8000`. Adjust `src/services/api.ts` if you expose the backend via a different host or use environment-specific URLs.
+All API calls currently use the hardcoded base URL `http://localhost:8000`. Adjust `frontend/src/services/api.ts` if you expose the backend via a different host or use environment-specific URLs.
 
 ---
 
@@ -238,10 +231,10 @@ Each response includes structured JSON keyed by the five policy sections with su
 
 | Command                  | Description                                             |
 | ------------------------ | ------------------------------------------------------- |
-| `npm run dev`           | Start Vite dev server                                   |
-| `npm run build`         | Production build for the frontend                       |
-| `npm run lint`          | Run ESLint (note: some warnings originate from vendored Playwright files) |
-| `npx tsc --noEmit`      | Type-check the frontend                                 |
+| `npm run dev`           | Start Vite dev server (run inside `frontend/`)          |
+| `npm run build`         | Production build for the frontend (inside `frontend/`)  |
+| `npm run lint`          | Run ESLint (inside `frontend/`; some warnings originate from Playwright vendor files) |
+| `npx tsc --noEmit`      | Type-check the frontend (inside `frontend/`)            |
 | `uvicorn app.main:app --reload` | Run backend with hot reload                   |
 
 ---
@@ -262,7 +255,7 @@ Each response includes structured JSON keyed by the five policy sections with su
 
 | Landing Page | Policy Summarizer | Comparison Setup | Comparison Results |
 | ------------ | ----------------- | ---------------- | ------------------ |
-| ![Landing page welcoming users to PolicyPal](public/screenshots/landing.png) | ![Summarizer form for uploading a PDF or entering a URL](public/screenshots/summarize.png) | ![Comparison setup with tabs for PDFs and URLs](public/screenshots/compare.png) | ![Comparison results highlighting differences and recommendations](public/screenshots/comparison_result.png) |
+| ![Landing page welcoming users to PolicyPal](frontend/public/screenshots/landing.png) | ![Summarizer form for uploading a PDF or entering a URL](frontend/public/screenshots/summarize.png) | ![Comparison setup with tabs for PDFs and URLs](frontend/public/screenshots/compare.png) | ![Comparison results highlighting differences and recommendations](frontend/public/screenshots/comparison_result.png) |
 
 ---
 

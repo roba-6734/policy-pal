@@ -4,6 +4,7 @@ Handles environment variables and application settings.
 """
 
 import os
+from pathlib import Path
 from typing import Literal
 from pydantic_settings import BaseSettings
 
@@ -47,7 +48,7 @@ class Settings(BaseSettings):
     log_level: str = "INFO"
     
     class Config:
-        env_file = ".env"
+        env_file = Path(__file__).resolve().parents[2] / ".env"
         case_sensitive = False
 
 
