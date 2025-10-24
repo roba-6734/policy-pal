@@ -91,6 +91,7 @@ AI-assisted privacy policy analysis that turns dense legal documents into action
 10. [API Overview](#api-overview)
 11. [Development Utilities](#development-utilities)
 12. [Troubleshooting](#troubleshooting)
+13. [UI Gallery](#ui-gallery)
 
 ---
 
@@ -326,6 +327,14 @@ Each response includes structured JSON keyed by the five policy sections with su
 | **LLM provider errors**                      | Confirm API keys and provider configuration. The backend falls back across providers if available. |
 | **Large PDFs failing**                       | Files over `MAX_FILE_SIZE` (default 25 MB) are rejected. Increase the limit in `.env` or reduce file size. |
 | **ESLint complaining about third-party files** | The project vendor directory installed by Playwright contains lint directives. Limit the lint scope or suppress these warnings if desired. |
+
+---
+
+## UI Gallery
+
+| Landing Page | Comparison Setup | Comparison Results |
+| ------------ | ---------------- | ------------------ |
+| ![Landing page showing upload form and URL input](public/screenshots/hero.png) | ![Comparison setup with tabs for PDFs and URLs](public/screenshots/compare.png) | ![Comparison results highlighting differences and recommendations](public/screenshots/comparison-results.png) |
 
 ---
 
