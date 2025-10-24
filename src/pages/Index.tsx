@@ -12,7 +12,7 @@ import { cn } from "@/lib/utils";
 
 const Index = () => {
   const navigate = useNavigate();
-  const { open } = useWorkspace();
+  const { open, ensureLoaded, setActive } = useWorkspace();
   const [file, setFile] = useState<File | null>(null);
   const [url, setUrl] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -271,8 +271,23 @@ const Index = () => {
                       <Button
                         type="button"
                         variant="secondary"
-                        onClick={() => {
+                        onClick={async () => {
+                          if (completedIds.length === 0) return;
                           open(completedIds);
+                          try {
+                            await ensureLoaded(completedIds);
+                          } catch (error) {
+                            console.error("Failed to preload workspace summaries:", error);
+                            toast({
+                              title: "Workspace error",
+                              description:
+                                error instanceof Error
+                                  ? error.message
+                                  : "We couldn't load the summaries into the workspace.",
+                              variant: "destructive",
+                            });
+                          }
+                          setActive(completedIds[0]);
                           navigate(`/results?ids=${encodeURIComponent(completedIds.join(","))}`);
                         }}
                       >

@@ -19,21 +19,35 @@ const Results = () => {
   const navigate = useNavigate();
   const [sections, setSections] = useState<PolicySection[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const source = location.state?.source || "Unknown Document";
-  const summaryId = location.state?.summaryId;
+  const stateData = (location.state as { summaryId?: string; source?: string } | null) ?? null;
+  const stateSummaryId = stateData?.summaryId;
+  const stateSource = stateData?.source;
+  const [documentName, setDocumentName] = useState(stateSource ?? "Unknown Document");
 
   useEffect(() => {
     const fetchPolicySummary = async () => {
-      if (!summaryId) {
-        // If no summaryId, redirect back to home
+      const params = new URLSearchParams(location.search);
+      const idsParam = params.get("ids");
+      const querySummaryId = idsParam
+        ? idsParam
+            .split(",")
+            .map((id) => id.trim())
+            .filter(Boolean)[0]
+        : undefined;
+      const targetSummaryId = stateSummaryId ?? querySummaryId;
+
+      if (!targetSummaryId) {
         navigate("/");
         return;
       }
 
+      setIsLoading(true);
+
       try {
-        const response = await getPolicySummary(summaryId);
+        const response = await getPolicySummary(targetSummaryId);
         const mappedSections = mapPolicySummary(response.summary);
         setSections(mappedSections);
+        setDocumentName(response.source_name || stateSource || "Unknown Document");
       } catch (error) {
         console.error("Error fetching policy summary:", error);
         toast({
@@ -48,15 +62,7 @@ const Results = () => {
     };
 
     fetchPolicySummary();
-  }, [summaryId, navigate]);
-
-  if (!location.state) {
-    // Redirect if accessed directly without data
-    useEffect(() => {
-      navigate("/");
-    }, [navigate]);
-    return null;
-  }
+  }, [stateSummaryId, stateSource, location.search, navigate]);
 
   if (isLoading) {
     return (
@@ -102,7 +108,7 @@ const Results = () => {
               Policy Summary
             </h2>
             <p className="text-lg text-muted-foreground">
-              Analysis of: <span className="font-semibold text-foreground">{source}</span>
+              Analysis of: <span className="font-semibold text-foreground">{documentName}</span>
             </p>
           </div>
 
