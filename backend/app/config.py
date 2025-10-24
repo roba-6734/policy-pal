@@ -13,7 +13,7 @@ class Settings(BaseSettings):
     """Application settings loaded from environment variables."""
     
     # Database
-    database_url: str = "postgresql://user:password@localhost/policypal"
+    database_url: str = os.getenv("DATABASE_URL")
     
     # LLM Configuration
     openai_api_key: str = os.getenv("OPENAI_API_KEY")
@@ -28,9 +28,7 @@ class Settings(BaseSettings):
     
     # CORS Settings
     cors_origins: list[str] = [
-        "http://localhost:3000",
-        "http://localhost:5173",
-        "http://localhost:8080",
+        "https://policy-pal-roan.vercel.app/"
     ]
     
     # File Upload Settings

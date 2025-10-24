@@ -9,11 +9,15 @@ import Results from "./pages/Results";
 import Compare from "./pages/Compare";
 import NotFound from "./pages/NotFound";
 import { WorkspaceProvider } from "@/hooks/useWorkspace";
+import { Analytics } from "@vercel/analytics/react";
+import { SpeedInsights } from "@vercel/speed-insights/react"
 
 const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
+    <Analytics />
+    <SpeedInsights />
     <TooltipProvider>
       <Toaster />
       <Sonner />
@@ -31,6 +35,7 @@ const App = () => (
       </WorkspaceProvider>
     </TooltipProvider>
   </QueryClientProvider>
+
 );
 
 export default App;
