@@ -2,7 +2,7 @@
  * API service for communicating with the PolicyPal backend
  */
 
-const BASE_URL = "https://policy-pal-o7fq.onrender.com/";
+const BASE_URL = "https://policy-pal-o7fq.onrender.com";
 
 // Types matching the backend models
 export type RiskLevel = "green" | "yellow" | "red";
