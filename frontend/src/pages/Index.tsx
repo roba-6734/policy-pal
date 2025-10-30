@@ -117,7 +117,15 @@ const Index = () => {
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-2">
               <Shield className="h-8 w-8 text-primary" />
-              <h1 className="text-2xl font-bold text-foreground">PolicyPal</h1>
+              <button
+                type="button"
+                className="text-2xl font-bold text-foreground bg-transparent border-none cursor-pointer p-0 hover:underline"
+                onClick={() => navigate("/")}
+                style={{ font: "inherit" }}
+                aria-label="Go to home"
+              >
+               <h1> PolicyPal</h1>
+              </button>
             </div>
             <div className="flex items-center gap-2">
               <Button variant="outline" onClick={() => navigate("/")}>

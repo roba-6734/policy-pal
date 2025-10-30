@@ -81,10 +81,15 @@ const Results = () => {
       <header className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => navigate("/")}
+              className="flex items-center gap-2 text-foreground"
+              aria-label="Go to home"
+            >
               <Shield className="h-8 w-8 text-primary" />
               <h1 className="text-2xl font-bold text-foreground">PolicyPal</h1>
-            </div>
+            </button>
             <div className="flex items-center gap-2">
               <Button variant="outline" onClick={() => navigate("/summarize")}>
                 <FileUp className="mr-2 h-4 w-4" />

@@ -13,7 +13,8 @@ class Settings(BaseSettings):
     """Application settings loaded from environment variables."""
     
     # Database
-    database_url: str = os.getenv("DATABASE_URL")
+    database_url: str = os.getenv("DATABASE_URL","postgresql://user:password@localhost/policypal")
+    
     
     # LLM Configuration
     openai_api_key: str = os.getenv("OPENAI_API_KEY")
@@ -28,7 +29,8 @@ class Settings(BaseSettings):
     
     # CORS Settings
     cors_origins: list[str] = [
-        "https://policy-pal-roan.vercel.app/"
+        "https://policy-pal-roan.vercel.app/",
+        "*"
     ]
     
     # File Upload Settings
@@ -48,7 +50,15 @@ class Settings(BaseSettings):
     class Config:
         env_file = Path(__file__).resolve().parents[2] / ".env"
         case_sensitive = False
+        extra = "ignore"  # Ignore extra environment variables
 
 
 # Global settings instance
 settings = Settings()
+
+# Normalize DATABASE_URL for SQLAlchemy/psycopg2 if needed (Render often provides postgres://)
+if settings.database_url.startswith("postgres://"):
+    settings.database_url = settings.database_url.replace("postgres://", "postgresql+psycopg2://", 1)
+elif settings.database_url.startswith("postgresql://") and "+" not in settings.database_url:
+    # Ensure explicit psycopg2 driver for reliability
+    settings.database_url = settings.database_url.replace("postgresql://", "postgresql+psycopg2://", 1)

@@ -15,12 +15,22 @@ from sqlalchemy.pool import StaticPool
 from app.config import settings
 
 # Database engine and session
-engine = create_engine(
-    settings.database_url,
-    poolclass=StaticPool,
-    pool_pre_ping=True,
-    echo=False
-)
+# Use different configurations for SQLite vs PostgreSQL
+if settings.database_url.startswith("sqlite"):
+    engine = create_engine(
+        settings.database_url,
+        poolclass=StaticPool,
+        connect_args={"check_same_thread": False},
+        echo=False
+    )
+else:
+    # Use default QueuePool for Postgres with health checks
+    engine = create_engine(
+        settings.database_url,
+        pool_pre_ping=True,
+        pool_recycle=300,
+        echo=False
+    )
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
@@ -55,10 +65,12 @@ def create_tables():
     Base.metadata.create_all(bind=engine)
 
 
-def get_summary_by_id(db: Session, summary_id: str) -> Optional[PolicySummary]:
+def get_summary_by_id(                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  db: Session, summary_id: str) -> Optional[PolicySummary]:
     """Retrieve a policy summary by ID."""
     try:
-        return db.query(PolicySummary).filter(PolicySummary.id == summary_id).first()
+        # Ensure UUID comparison uses proper type
+        uid = uuid.UUID(str(summary_id))
+        return db.query(PolicySummary).filter(PolicySummary.id == uid).first()
     except Exception:
         return None
 
