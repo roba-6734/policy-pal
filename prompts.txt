@@ -1,0 +1,129 @@
+Frontend
+Build a **production-ready frontend** for a web app called **PolicyPal**, which summarizes Terms of Service and Privacy Policies. The frontend should be **clean, modern, and user-friendly**, and fully compatible with a backend API for dynamic functionality.
+
+**Requirements:**
+
+1. **Landing Page:**
+    - App title: “PolicyPal”
+    - Short tagline: “Understand policies at a glance”
+    - File upload input (PDF) and URL input field
+    - Submit button: “Summarize Policy”
+    - Responsive design for desktop and mobile
+2. **Results Page:**
+    - Card-based layout for each policy section:
+        - Section title (Data Collection, User Rights, Opt-Out Options, Arbitration Clause)
+        - Summary text from backend
+        - Risk icon (Green check, Yellow warning, Red flag)
+    - Optional “Details” expandable section for longer text
+    - Optional comparison view (highlight differences if two policies compared)
+3. **Integration Points:**
+    - Call backend API endpoints: `/summarize_policy` and `/compare_policies`
+    - Send uploaded file or URL to backend and receive JSON structured output
+    - Render JSON output dynamically into cards with correct colors/icons
+4. **Styling:**
+    - Use **modern, minimal design** with good spacing and typography
+    - Color-coded risk flags: green/yellow/red
+    - Clean header/footer with app branding
+    - Mobile-first responsive design
+5. **Deliverables:**
+    - Fully functional Bolt frontend code ready to deploy
+    - React-based with components clearly structured
+    - Include placeholders for API calls (no hardcoded data)
+    - Clear naming conventions for components, props, and state
+
+Make the code **production-ready, modular, and clean**, ready for integration with a backend.
+
+
+Backend
+
+Build a **production-ready backend** for **PolicyPal**, using **FastAPI**. The backend should handle dynamic policy summarization and optional policy comparison using an LLM.
+
+**Requirements:**
+
+1. **Endpoints:**
+    - `/summarize_policy`
+        - Accept PDF upload or URL
+        - Extract text from PDF/URL
+        - Call LLM to generate structured summary in JSON:
+            
+            ```json
+            {
+              "Data Collection": {"summary": "...", "risk": "green/yellow/red"},
+              "User Rights": {"summary": "...", "risk": "green/yellow/red"},
+              "Opt-Out Options": {...},
+              "Arbitration Clause": {...}
+            }
+            
+            ```
+            
+    - `/compare_policies` (optional)
+        - Accept two PDFs/URLs
+        - Generate structured JSON highlighting differences per section
+2. **Backend Functionality:**
+    - PDF extraction using reliable libraries (PyMuPDF, pdfplumber)
+    - URL scraping for policy text
+    - Call LLM API to generate summaries
+    - Handle long documents using chunking if needed
+    - Return JSON output ready for frontend rendering
+3. **Database:**
+    - Optional: store processed summaries with unique links
+4. **Deployment:**
+    - Ready for deployment on **AWS/Azure/Render**
+
+Make the code **production-ready, modular, and clean**, with clear functions, endpoints, and error handling. Include comments explaining the logic and usage.
+
+
+I got the following error while trying to upload a file to check the functionality, what is the problem and provide a suggested fix for the problem
+
+hook.js:608 ⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition. Error Component Stack
+    at BrowserRouter (react-router-dom.js?v=11b8ca6d:5247:5)
+    at Provider (chunk-IV27W46H.js?v=11b8ca6d:42:15)
+    at TooltipProvider (@radix-ui_react-tooltip.js?v=11b8ca6d:2275:5)
+    at QueryClientProvider (@tanstack_react-query.js?v=11b8ca6d:2934:3)
+    at App (<anonymous>)
+overrideMethod @ hook.js:608
+hook.js:608 ⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath. Error Component Stack
+    at BrowserRouter (react-router-dom.js?v=11b8ca6d:5247:5)
+    at Provider (chunk-IV27W46H.js?v=11b8ca6d:42:15)
+    at TooltipProvider (@radix-ui_react-tooltip.js?v=11b8ca6d:2275:5)
+    at QueryClientProvider (@tanstack_react-query.js?v=11b8ca6d:2934:3)
+    at App (<anonymous>)
+overrideMethod @ hook.js:608
+(index):1 Unchecked runtime.lastError: The message port closed before a response was received.
+(index):1 Uncaught (in promise) Error: Could not establish connection. Receiving end does not exist.
+(index):1 Access to fetch at 'http://localhost:8000/api/summarize_policy' from origin 'http://localhost:8080' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.
+:8000/api/summarize_policy:1  Failed to load resource: net::ERR_FAILED
+hook.js:608 Error processing policy: TypeError: Failed to fetch
+    at summarizePolicyFromFile (api.ts:107:26)
+    at handleSubmit (Index.tsx:51:26)
+    at HTMLUnknownElement.callCallback2 (chunk-R6S4VRB5.js?v=11b8ca6d:3674:22)
+    at Object.invokeGuardedCallbackDev (chunk-R6S4VRB5.js?v=11b8ca6d:3699:24)
+    at invokeGuardedCallback (chunk-R6S4VRB5.js?v=11b8ca6d:3733:39)
+    at invokeGuardedCallbackAndCatchFirstError (chunk-R6S4VRB5.js?v=11b8ca6d:3736:33)
+    at executeDispatch (chunk-R6S4VRB5.js?v=11b8ca6d:7014:11)
+    at processDispatchQueueItemsInOrder (chunk-R6S4VRB5.js?v=11b8ca6d:7034:15)
+    at processDispatchQueue (chunk-R6S4VRB5.js?v=11b8ca6d:7043:13)
+    at dispatchEventsForPlugins (chunk-R6S4VRB5.js?v=11b8ca6d:7051:11)
+overrideMethod @ hook.js:608
+
+For the code present, we get this error:
+
+```
+Cannot find namespace 'WorkspaceContext'.
+
+```
+
+How can I resolve this? If you propose a fix, please make it concise.
+
+Implement a feature for comparing two different policies
+
+
+
+
+Ctrl+K to generate command
+I am deploying it on render, what is the specific python version in this project so that I use that to be compatible and what should the build command be'
+
+
+I have created a postgres db on render and updated the database url now but Whenever I upload a document to summarize the policy it fails to fetch and got this error attached here in the terminal, what is the issue?
+
+Make the header policy pal on every page clickable that will take back to the home page
