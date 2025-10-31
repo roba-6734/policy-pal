@@ -5,6 +5,14 @@ AI-assisted privacy policy analysis that turns dense legal documents into action
 
 ---
 
+## Demo Video
+
+🎥 **[Watch Demo Video](frontend/public/demo_video.mp4)**
+
+*Click the link above to view the demo video showing PolicyPal in action.*
+
+---
+
 ## Table of Contents
 
 1. [Features](#features)
