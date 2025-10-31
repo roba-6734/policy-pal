@@ -29,7 +29,7 @@ class Settings(BaseSettings):
     
     # CORS Settings
     cors_origins: list[str] = [
-        "https://policy-pal-roan.vercel.app",
+        "*",
     ]
     
     # File Upload Settings
